@@ -162,14 +162,16 @@
       
       // Skip conversion for local/relative paths (default image)
       if (img.startsWith('http')) {
+        console.log(`🌐 Remote URL detected: ${img.substring(0, 60)}...`);
+        
         // Try pattern: /d/FILE_ID/view or /d/FILE_ID
-        const driveMatch = img.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        const driveMatch = img.match(/\/d\/([a-zA-Z0-9_\-]+)/);
         if (driveMatch) {
           fileId = driveMatch[1];
           console.log(`✅ Found Google Drive File ID: ${fileId}`);
         } else {
           // Try pattern: ?id=FILE_ID or &id=FILE_ID
-          const queryMatch = img.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+          const queryMatch = img.match(/[?&]id=([a-zA-Z0-9_\-]+)/);
           if (queryMatch) {
             fileId = queryMatch[1];
             console.log(`✅ Found File ID (query param): ${fileId}`);
@@ -179,8 +181,10 @@
         }
         
         if (fileId) {
-          img = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
-          console.log(`🔗 Generated thumbnail URL: ${img.substring(0, 80)}...`);
+          // Use export=view format which is more reliable for CORS
+          img = `https://drive.google.com/uc?id=${fileId}&export=view`;
+          console.log(`🔗 Generated Google Drive export URL`);
+          console.log(`   Full URL: ${img}`);
         }
       } else {
         console.log(`📂 Local/relative path: ${img}`);
@@ -189,19 +193,28 @@
       const el = document.getElementById("ss");
       console.log('🖼️ Setting image element...');
       
-      el.onerror = () => {
-        console.error(`❌ Failed to load image: ${img}`);
+      el.onerror = (err) => {
+        console.error(`❌ Failed to load image`);
+        console.error(`   URL: ${img}`);
+        console.error(`   Error: ${err}`);
         el.style.display = "none";
         document.getElementById("err").style.display = "block";
-        document.getElementById("err").textContent = `Failed to load: ${img}`;
+        document.getElementById("err").textContent = `Failed to load image. Check console.`;
       };
       
       el.onload = () => {
         console.log('✅ Image loaded successfully');
       };
       
-      console.log(`📤 Loading image: ${img.substring(0, 80)}...`);
+      console.log(`📤 Requesting image...`);
       el.src = img;
+      
+      // Add timeout check
+      setTimeout(() => {
+        if (!el.complete && el.src) {
+          console.warn('⏱️ Image is taking longer than expected to load...');
+        }
+      }, 5000);
     } else {
       console.error('❌ No image to display');
       document.getElementById("err").style.display = "block";
