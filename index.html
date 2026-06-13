@@ -9,221 +9,55 @@
     body { background: #fff; }
     img { display: block; width: 100%; height: auto; }
     #err { padding: 20px; font-family: sans-serif; color: red; }
-    
-    /* Console Panel Styles */
-    #console-panel {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      width: 400px;
-      max-height: 300px;
-      background: #1e1e1e;
-      border: 1px solid #444;
-      border-radius: 4px 4px 0 0;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      color: #0f0;
-      overflow-y: auto;
-      z-index: 9999;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-    }
-    
-    #console-panel.hidden {
-      display: none;
-    }
-    
-    .console-header {
-      padding: 8px;
-      background: #0f0;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .console-content {
-      padding: 8px;
-      max-height: 250px;
-      overflow-y: auto;
-    }
-    
-    .console-line {
-      margin: 2px 0;
-      padding: 2px;
-      border-bottom: 1px solid #333;
-    }
-    
-    .console-info { color: #0f0; }
-    .console-error { color: #f00; }
-    .console-warn { color: #ff0; }
-    .console-debug { color: #0ff; }
   </style>
 </head>
 <body>
   <img id="ss" alt="" />
   <div id="err" style="display:none">Image not found.</div>
-  
-  <!-- Console Panel -->
-  <div id="console-panel">
-    <div class="console-header">
-      <span>🔍 Console</span>
-      <button onclick="toggleConsole()" style="background: none; border: none; color: #000; cursor: pointer; font-weight: bold;">−</button>
-    </div>
-    <div class="console-content" id="console-content"></div>
-  </div>
-  
-  <script>
-    // ── Save original console methods FIRST (before any overrides) ──────────
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-    const originalDebug = console.debug;
 
-    // ── Logger System ────────────────────────────────────────────────────────
-    const logs = [];
-    const maxLogs = 100;
-    
-    function addLog(message, type = 'info') {
-      const timestamp = new Date().toLocaleTimeString();
-      const logEntry = `[${timestamp}] ${message}`;
-      logs.push({ message: logEntry, type });
-      
-      // Keep logs array size manageable
-      if (logs.length > maxLogs) logs.shift();
-      
-      // Render to console panel
-      renderConsole();
-      
-      // Use ORIGINAL console methods to avoid infinite recursion!
-      if (type === 'error') originalError.call(console, `[Transit] ${message}`);
-      else if (type === 'warn') originalWarn.call(console, `[Transit] ${message}`);
-      else if (type === 'debug') originalDebug.call(console, `[Transit] ${message}`);
-      else originalLog.call(console, `[Transit] ${message}`);
-    }
-    
-    function renderConsole() {
-      const content = document.getElementById('console-content');
-      content.innerHTML = logs.map(log => 
-        `<div class="console-line console-${log.type}">${escapeHtml(log.message)}</div>`
-      ).join('');
-      content.scrollTop = content.scrollHeight;
-    }
-    
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-    
-    function toggleConsole() {
-      document.getElementById('console-panel').classList.toggle('hidden');
-    }
-    
-    // ── Override browser console (uses originals internally — no recursion) ──
-    console.log = function(...args) {
-      addLog(args.join(' '), 'info');
-      originalLog.apply(console, args);
-    };
-    
-    console.error = function(...args) {
-      addLog(args.join(' '), 'error');
-      originalError.apply(console, args);
-    };
-    
-    console.warn = function(...args) {
-      addLog(args.join(' '), 'warn');
-      originalWarn.apply(console, args);
-    };
-    
-    console.debug = function(...args) {
-      addLog(args.join(' '), 'debug');
-      originalDebug.apply(console, args);
-    };
-    
-    // ── Main Script ──────────────────────────────────────────────────────────
-    console.log('🚀 Transit Pass Image Viewer - Starting...');
-    
-    // Default image path
+  <script>
     const DEFAULT_IMAGE = './default.png';
-    
+
     let img = decodeURIComponent(new URLSearchParams(location.search).get("img") || "");
-    console.log(`📥 Query parameter (raw): ${img || '(none - will use default)'}`);
 
     if (!img) {
-      console.log('📌 No image URL provided, using default image...');
       img = DEFAULT_IMAGE;
     }
 
     if (img) {
-      console.log('🔍 Parsing image URL...');
-      // Convert Google Drive URL → embeddable thumbnail URL
       let fileId = null;
-      
-      // Skip conversion for local/relative paths (default image)
+
       if (img.startsWith('http')) {
-        console.log(`🌐 Remote URL detected: ${img.substring(0, 60)}...`);
-        
         // Try pattern: /d/FILE_ID/view or /d/FILE_ID
         const driveMatch = img.match(/\/d\/([a-zA-Z0-9_\-]+)/);
         if (driveMatch) {
           fileId = driveMatch[1];
-          console.log(`✅ Found Google Drive File ID: ${fileId}`);
         } else {
           // Try pattern: ?id=FILE_ID or &id=FILE_ID
           const queryMatch = img.match(/[?&]id=([a-zA-Z0-9_\-]+)/);
           if (queryMatch) {
             fileId = queryMatch[1];
-            console.log(`✅ Found File ID (query param): ${fileId}`);
-          } else {
-            console.log('ℹ️ Remote URL (non-Drive) - using as-is');
           }
         }
-        
+
         if (fileId) {
-          // Use Google Drive thumbnail API - only method that works for img tags without CORS issues
           img = `https://drive.google.com/thumbnail?id=${fileId}&sz=w2048-h2048`;
-          console.log(`🔗 Generated Google Drive thumbnail URL`);
-          console.log(`   Full URL: ${img}`);
         }
-      } else {
-        console.log(`📂 Local/relative path: ${img}`);
       }
 
       const el = document.getElementById("ss");
-      console.log('🖼️ Setting image element...');
-      
-      el.onerror = (err) => {
-        console.error(`❌ Failed to load image`);
-        console.error(`   URL: ${img}`);
-        console.error(`   Error: ${err}`);
+
+      el.onerror = () => {
         el.style.display = "none";
         document.getElementById("err").style.display = "block";
-        document.getElementById("err").textContent = `Failed to load image. Check console.`;
+        document.getElementById("err").textContent = "Failed to load image.";
       };
-      
-      el.onload = () => {
-        console.log('✅ Image loaded successfully');
-      };
-      
-      console.log(`📤 Requesting image...`);
+
       el.src = img;
-      
-      // Add timeout check
-      setTimeout(() => {
-        if (!el.complete && el.src) {
-          console.warn('⏱️ Image is taking longer than expected to load...');
-        }
-      }, 5000);
     } else {
-      console.error('❌ No image to display');
       document.getElementById("err").style.display = "block";
       document.getElementById("err").textContent = "No image available.";
     }
-    
-    console.log('✅ Initialization complete');
   </script>
 </body>
 </html>
