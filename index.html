@@ -181,9 +181,9 @@
         }
         
         if (fileId) {
-          // Use export=view format which is more reliable for CORS
-          img = `https://drive.google.com/uc?id=${fileId}&export=view`;
-          console.log(`🔗 Generated Google Drive export URL`);
+          // Use export=download to get raw image bytes, as export=view returns an HTML page
+          img = `https://drive.google.com/uc?id=${fileId}&export=download`;
+          console.log(`🔗 Generated Google Drive download URL`);
           console.log(`   Full URL: ${img}`);
         }
       } else {
