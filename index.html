@@ -76,6 +76,12 @@
   </div>
   
   <script>
+    // ── Save original console methods FIRST (before any overrides) ──────────
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    const originalDebug = console.debug;
+
     // ── Logger System ────────────────────────────────────────────────────────
     const logs = [];
     const maxLogs = 100;
@@ -91,10 +97,11 @@
       // Render to console panel
       renderConsole();
       
-      // Also log to browser console
-      console[type === 'error' ? 'error' : type === 'warn' ? 'warn' : type === 'debug' ? 'debug' : 'log'](
-        `[Transit] ${message}`
-      );
+      // Use ORIGINAL console methods to avoid infinite recursion!
+      if (type === 'error') originalError.call(console, `[Transit] ${message}`);
+      else if (type === 'warn') originalWarn.call(console, `[Transit] ${message}`);
+      else if (type === 'debug') originalDebug.call(console, `[Transit] ${message}`);
+      else originalLog.call(console, `[Transit] ${message}`);
     }
     
     function renderConsole() {
@@ -115,12 +122,7 @@
       document.getElementById('console-panel').classList.toggle('hidden');
     }
     
-    // ── Override browser console ────────────────────────────────────────────
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-    const originalDebug = console.debug;
-    
+    // ── Override browser console (uses originals internally — no recursion) ──
     console.log = function(...args) {
       addLog(args.join(' '), 'info');
       originalLog.apply(console, args);
