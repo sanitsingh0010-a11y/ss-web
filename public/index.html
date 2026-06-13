@@ -181,9 +181,9 @@
         }
         
         if (fileId) {
-          // Use lh3.googleusercontent.com which serves images directly without CORS issues
-          img = `https://lh3.googleusercontent.com/d/${fileId}`;
-          console.log(`🔗 Generated Google Drive direct image URL`);
+          // Use Google Drive thumbnail API - only method that works for img tags without CORS issues
+          img = `https://drive.google.com/thumbnail?id=${fileId}&sz=w2048-h2048`;
+          console.log(`🔗 Generated Google Drive thumbnail URL`);
           console.log(`   Full URL: ${img}`);
         }
       } else {
